@@ -1,0 +1,95 @@
+package gapp.model.dao.jpa;
+
+import java.util.List;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import gapp.model.GappAdditionalReq;
+import gapp.model.GappAdditionalReqDetails;
+import gapp.model.GappApplication;
+import gapp.model.GappDepartment;
+import gapp.model.GappFile;
+import gapp.model.GappProgram;
+import gapp.model.GappUniversityDegree;
+import gapp.model.dao.GappApplicationDao;
+
+@Repository
+public class GappApplicationDaoImpl implements GappApplicationDao {
+
+	
+	 @PersistenceContext
+	  private EntityManager entityManager;
+
+	@Override
+	public List<GappApplication> getApplicationbyStudentID(int id) {
+
+		return entityManager.createQuery( "from GappApplication where user.id=:id", GappApplication.class ).setParameter("id", id)
+	            .getResultList();
+	}
+
+	@Override
+	public GappApplication getApplicationByID(int id) {
+		return entityManager.createQuery( "from GappApplication where id=:id", GappApplication.class ).setParameter("id", id)
+	            .getSingleResult();
+	}
+	
+	@Override
+	public GappUniversityDegree getUniDegree(int id) {
+		return entityManager.createQuery( "from GappUniversityDegree where id=:id", GappUniversityDegree.class ).setParameter("id", id)
+	            .getSingleResult();
+	}
+	
+
+	
+	
+	@Override
+	@Transactional
+	 public GappFile saveFile(GappFile gappFile){
+		return entityManager.merge(gappFile);
+		 
+	 }
+
+	@Override
+	@Transactional
+	public GappApplication addApplication(GappApplication gappApplication) {
+		return entityManager.merge(gappApplication);
+	}
+
+	@Override
+	@Transactional
+	public GappUniversityDegree addUniversityDegree(GappUniversityDegree gappUniversityDegree) {
+		return entityManager.merge(gappUniversityDegree);
+	}
+
+	@Override
+	@Transactional
+	public List<GappUniversityDegree> addUniversityDegreeList(List<GappUniversityDegree> gappUniversityDegreeList) {
+		return  entityManager.merge(gappUniversityDegreeList);
+	}
+
+	
+	@Override
+	@Transactional
+	public void removeUniDegree(GappUniversityDegree gappUniversityDegree) {
+		
+		entityManager.remove(gappUniversityDegree);
+	}
+
+	@Override
+	public GappAdditionalReq getAddReq(int id) {
+		return entityManager.createQuery( "from GappAdditionalReq where id=:id", GappAdditionalReq.class ).setParameter("id", id)
+	            .getSingleResult();
+	}
+	
+
+	@Override
+	@Transactional
+	public GappAdditionalReqDetails addAddReqDtails(GappAdditionalReqDetails gappAdditionalReqDetails) {
+		return entityManager.merge(gappAdditionalReqDetails);
+	}
+
+}

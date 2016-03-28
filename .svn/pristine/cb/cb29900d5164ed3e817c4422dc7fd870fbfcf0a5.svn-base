@@ -1,0 +1,352 @@
+package gapp.web.controller;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import gapp.model.GappApplication;
+import gapp.model.GappApplicationStatus;
+import gapp.model.GappDepartment;
+import gapp.model.GappFile;
+import gapp.model.GappProgram;
+import gapp.model.GappUniversityDegree;
+import gapp.model.GappUsers;
+import gapp.model.dao.GappApplicationDao;
+import gapp.model.dao.GappDepartmentDao;
+import gapp.model.dao.GappUserDao;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.google.gson.Gson;
+
+@Controller
+public class GappApplicationController {
+
+	@Autowired
+	GappApplicationDao gappApplicationDao;
+
+	@Autowired
+	private ServletContext context;
+	
+	@Autowired
+	GappDepartmentDao gappDepartmentDao; 
+	
+	@Autowired
+	GappUserDao gappUserDao;
+	
+	
+
+	private java.io.File getFileDirectory() {
+		String path = context.getRealPath("/WEB-INF/files");
+
+		return new java.io.File(path);
+	}
+
+	@RequestMapping("/download.html")
+	private String download(HttpServletResponse response,
+			@RequestParam String filename) throws ServletException, IOException {
+
+		response.setContentType("application/octet-stream");
+		response.setHeader("Content-Disposition", "attachment; filename="
+				+ filename);
+
+		FileInputStream in = new FileInputStream(getFileDirectory() + "/"
+				+ filename);
+		OutputStream out = response.getOutputStream();
+
+		byte buffer[] = new byte[2048];
+		int bytesRead;
+		while ((bytesRead = in.read(buffer)) > 0)
+			out.write(buffer, 0, bytesRead);
+
+		in.close();
+		return null;
+	}
+
+	@RequestMapping(value = "/ViewAppDetail.html")
+	public String getApplication(@RequestParam Integer appID, ModelMap model) {
+
+		model.put("application", gappApplicationDao.getApplicationByID(appID));
+		return "ViewAppDetail";
+	}
+	
+	// applicant registration controller
+		@RequestMapping(value = "/NewApplication.html", method = RequestMethod.GET)
+		public String newApplicant(@RequestParam Integer studID,ModelMap model) {
+			model.put("studID", studID);
+			model.put("user", gappUserDao.getUserById(studID));
+			model.put("department", gappDepartmentDao.getDepartments());
+			model.put("gappApplication", new GappApplication());
+			return "NewApplication";
+
+		}
+
+		@RequestMapping(value = "/NewApplication.html" ,method = RequestMethod.POST )
+		public String newApplicant(@RequestParam String[] university ,@RequestParam String[] degree,@RequestParam String[] major,@RequestParam String[] timePeriod,@RequestParam String[] gpa,HttpServletRequest request,@ModelAttribute GappApplication gappApplication,@RequestParam MultipartFile t, BindingResult result,ModelMap models,@RequestParam Integer studID,ModelMap model )throws IllegalStateException, IOException {
+
+			
+			//-------------- Set User -----------------------//
+			GappUsers gappUsers=gappUserDao.getUserById(studID);
+			gappApplication.setUser(gappUsers);
+			
+			
+			//------------Set program---------------------//
+			String progname=request.getParameter("program1");
+			System.out.println("prgname when not selected:"+progname);
+		/*	if(progname.equalsIgnoreCase("selectprog"))
+			{
+				model.put("selectprogram","please select department and program");
+				return "NewApplication";
+			}
+			else
+			{*/
+			GappProgram gappProgram=gappDepartmentDao.getProgramByName(progname);
+			gappApplication.setProgram(gappProgram);
+			//to verify
+			String department = gappProgram.getDepartment().getName();
+			String departmentSelected= request.getParameter("dept");
+			int deptID=gappProgram.getDepartment().getId();
+			if(department.equals(departmentSelected))
+			{
+				//TO DO - verify program is available in departmet or not
+			}
+			//}
+			
+			
+				
+			
+			//------------Set file and Transacript File Handling --------------------//
+			
+			//Combination of User ID + Program + Term -- todo
+			String Filename="Transcript_"+gappUsers.getId()+"_"+t.getOriginalFilename();
+			System.out.println("Filename:"+Filename);
+			t.transferTo(new java.io.File(getFileDirectory(),Filename));
+			System.out.println(getFileDirectory()+Filename);
+			Date date = new Date();
+	    	GappFile file = new GappFile();
+	    	if(!t.isEmpty()){
+	    		file.setDate(date);
+	    		file.setName(Filename);
+	    		file.setSize(t.getSize());
+	    		file.setType(t.getContentType());
+	    		//file.setOwner(user.getUser(userid));
+	    		file.setOriginalName(t.getOriginalFilename());
+	    		gappApplication.setTranscript(gappApplicationDao.saveFile(file));
+	    	}
+			
+				
+			//--------------- Set Term ---------------------------//
+	    	String term=request.getParameter("courseTerm");
+	    	gappApplication.setTerm(term);
+	    	
+	    	
+	    	
+	    	//-------------- Set Applicatiom Status ----------------------//
+	    	
+	    	GappApplicationStatus applicationStatus=new GappApplicationStatus();
+	    	/*String save=request.getParameter("save");
+	    	String submit=request.getParameter("submit");
+
+	    	System.out.println("Action:"+save);
+	    	System.out.println("Action:"+submit);
+	    	
+	    	if(submit!=null)
+	    	{	   
+	    		applicationStatus.setStatus("New");
+	    	}
+	    	else
+	    	{*/
+	    		applicationStatus.setStatus("Not Submitted");	    		
+	    	//}
+	    	
+	    	applicationStatus.setTimeOfChange(new Date());
+	    	applicationStatus.setComment("the application is submitted by the student");
+	    	applicationStatus.setIsLatestStatus(true);
+	    	applicationStatus.setGappUsers(gappUsers);
+	    	applicationStatus.setGappApplication(gappApplication);
+	    	List<GappApplicationStatus> listOfStatus=new ArrayList<GappApplicationStatus>();
+	    	listOfStatus.add(applicationStatus);
+	    	gappApplication.setApplicationStatus(listOfStatus);
+	    	
+	    	//------------- Set Additional Requirement -------------------//
+	    	
+			GappApplication gappApplicationSaved= gappApplicationDao.addApplication(gappApplication);
+
+	    	
+	     	//--------------------University Degree--------------------------------//
+	    	List<GappUniversityDegree> gappUniversityDegreesList=new ArrayList<GappUniversityDegree>();
+			for(int i=0;i<degree.length;i++){
+				GappUniversityDegree gappUniversityDegree=new GappUniversityDegree();
+				gappUniversityDegree.setUniversityName(university[i]);
+				gappUniversityDegree.setDergreeEarned(degree[i]);
+				gappUniversityDegree.setTimePeriod(timePeriod[i]);
+				gappUniversityDegree.setMajor(major[i]);
+				gappUniversityDegree.setGPA(Double.parseDouble(gpa[i]));
+				gappUniversityDegree.setGappApplication(gappApplicationSaved);
+				gappApplicationDao.addUniversityDegree(gappUniversityDegree);
+				//gappUniversityDegreesList.add(gappUniversityDegree);
+				System.out.println("----------Degree-----------");
+				System.out.println(university[i]+" "+degree[i]+" "+major[i]+" "+timePeriod[i]+" "+gpa[i]);
+				
+			}
+			//gappApplication.setEducationalBackground(gappUniversityDegreesList);
+			//gappApplicationDao.addUniversityDegreeList(gappUniversityDegreesList);
+			//gappApplicationDao.addUniversityDegree(gappUniversityDegree)
+	    	//GappApplication gappApplicationSaved= gappApplicationDao.addApplication(gappApplication);
+			//int AppID=gappApplicationSaved.getId();
+	    	System.out.println("Saved App ID :"+gappApplicationSaved.getId());
+	    	
+	    	int AppID=gappApplicationSaved.getId();
+			
+	    	
+	    	
+			//return "redirect:student.html?id="+studID;//for basic
+			return "redirect:additionalReq.html?sid="+studID+"&deptID="+deptID+"&AppID="+AppID;//for Add requirements
+			
+
+		}
+
+		
+		@RequestMapping(value = "/getProgram.html", method = RequestMethod.GET)
+		public @ResponseBody String getPrograms( HttpServletRequest request ,HttpServletResponse response,ModelMap models) {
+			
+			//String Trans_filename=
+			
+			
+			
+			System.out.println(request.getParameter("deptName"));
+
+			String deptid_str = request.getParameter("deptName");
+			List<String> list = new ArrayList<String>();
+			String json = null;
+			
+			int deptID=Integer.parseInt(deptid_str);
+			
+			GappDepartment gappDepartment=gappDepartmentDao.getDepartmentById(deptID);
+ 			
+			List<GappProgram> gappProgramsList=gappDepartment.getProgramList();
+		
+			for(GappProgram gappProgram:gappProgramsList){
+				list.add(gappProgram.getName());	
+			}
+			
+			//models.put("DeptID", deptID);
+			json = new Gson().toJson(list);
+			response.setContentType("application/json");
+			try {
+				response.getWriter().write(json);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			
+			
+			return null;
+		}
+		
+		
+		@RequestMapping(value = "/addUniversityDegree.html", method = RequestMethod.GET)
+		public String addUniversityDegree(@RequestParam int appId,@RequestParam int studId, ModelMap model) {
+			
+			model.put("studId", studId);
+			
+			model.put("appId", appId);
+
+			GappUniversityDegree gappUniversityDegree=new GappUniversityDegree();
+			
+			model.put("gappUniversityDegree", gappUniversityDegree);
+			
+			return "addUniversityDegree";
+		}
+
+		@RequestMapping(value = "/addUniversityDegree.html", method = RequestMethod.POST)
+		public String addUniversityDegree(@ModelAttribute GappUniversityDegree gappUniversityDegree,
+				BindingResult result, @RequestParam int studId,@RequestParam int appId ) {
+
+			
+			
+			
+			
+			GappApplication gappApplication=gappApplicationDao.getApplicationByID(appId);
+			
+			
+			
+			gappUniversityDegree.setGappApplication(gappApplication);
+			gappApplicationDao.addUniversityDegree(gappUniversityDegree);
+			
+			
+			return "redirect:editApplication.html?appID="+appId;
+			
+		}
+		
+		/*@RequestMapping(value = "/additionalReq.html", method = RequestMethod.GET)
+		public String addAdditionalRequirement(@RequestParam(required = false) String err,@RequestParam int sid,@RequestParam int deptID,@RequestParam int AppID, ModelMap model){
+			
+			GappApplication gappApplication=gappApplicationDao.getApplicationByID(AppID);
+			model.put("gappApplication", gappApplication);
+			model.put("sid", sid);
+			model.put("deptID", deptID);
+			model.put("AppID", AppID);
+			model.put("err", err);
+			
+			System.out.println("------------->"+err);
+			
+			String str = (String)model.get("ReqAlreadyEists");
+			System.out.println(str);
+			
+			return "additionalReq";
+			
+		}*/
+	/*	
+		@RequestMapping(value = "/editApplication.html", method = RequestMethod.GET)
+		public String editApp(@RequestParam int appID, ModelMap model){
+			
+			GappApplication gappApplication=gappApplicationDao.getApplicationByID(appID);
+			//int studID=gappApplication.getUser().getId();
+			GappDepartment gappDepartment=gappApplication.getProgram().getDepartment();
+			List<GappProgram> gappProgramsList=gappDepartment.getProgramList();
+			
+			GappUsers gappUsers=gappApplication.getUser();
+			
+			model.put("gappUsers", gappUsers);			
+			model.put("progList",gappProgramsList );
+			model.put("gappApplication", gappApplication);
+			
+			return "editApplication";
+			
+		}
+		
+		@RequestMapping(value = "/editApplication.html", method = RequestMethod.POST)
+		public String editApp(@ModelAttribute GappApplication gappApplication,BindingResult result, @RequestParam int appID, ModelMap model){
+			
+			//int studId=gappApplication.getUser().getId();
+			//System.out.println(studId);
+			System.out.println(gappApplication.getId());
+			System.out.println(gappApplication.getTerm());
+			
+			
+			return "redirect:student.html?id="+116;
+			
+		}*/
+
+}
