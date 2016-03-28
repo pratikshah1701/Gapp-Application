@@ -1,7 +1,6 @@
 package gapp.web.controller;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -9,7 +8,6 @@ import gapp.model.GappAdditionalReq;
 import gapp.model.GappAdditionalReqDetails;
 import gapp.model.GappApplication;
 import gapp.model.GappApplicationStatus;
-import gapp.model.GappDepartment;
 import gapp.model.GappFile;
 import gapp.model.GappUsers;
 import gapp.model.dao.GappApplicationDao;
@@ -101,8 +99,6 @@ public class GappAdditionalReqController {
     	}
     	
     	applicationStatus.setTimeOfChange(new Date());
-    	//applicationStatus.setComment("the application is submitted by the student");
-
     	
     	
     	List<GappApplicationStatus> listOfStatus=gappApplication.getApplicationStatus();
