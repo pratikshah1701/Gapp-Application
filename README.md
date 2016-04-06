@@ -1,9 +1,9 @@
 # Gapp-Application
 
 
-GAPP(Graduate Application Portal) Project Description
+##GAPP(Graduate Application Portal) Project Description
 
-Background
+######Background
 
 To apply for a graduate program at CSULA, a student needs to complete an online application at CSUMentor (known as the university application), submit a set of official transcripts, and pay the application fees. Some departments also require some additional application materials (known as supplemental application or department application), which may include personal statement, recommendation letters, and so on. The staff at the university admission office are responsible for importing the applications from CSUMentor to GET, and updating application status on GET to indicate whether the transcripts and application fees have been received. The university staff are also responsible for translating (using an external agency) and scanning transcripts, and uploading them to a document hosting service OnBase. The supplemental applications are sent directly to each department and are handled by department staff.
 
@@ -15,7 +15,8 @@ Students will use CSUMentor to submit a university application and use GAPP to s
 University admission staff will upload scanned transcripts to GAPP.
 Department staff will upload additional application materials (e.g. personal statement, recommendation letters) to GAPP.
 Department admission committee will use GAPP to review the applications.
-Users
+
+######Users
 
 There are three types of users in the system: administrators, staff, and students. For each user the system keeps the user's last name, first name, email (which is also used as username for login purpose), and password.
 
@@ -25,7 +26,7 @@ Staff, which include university and department staff as well as the members of d
 
 Students can apply for programs.
 
-Applications
+######Applications
 
 To submit an application on GAPP, a student should provide the following information:
 
@@ -43,7 +44,7 @@ Type of the field value, which can be Text, Number, or File.
 Whether the field is required or optional.
 For example, suppose the Accounting Department requires GMAT score and a Statement of Purpose, the applications for the Accounting MS program will have two additional fields: (GMAT, number, required) and (State of Purpose, File, Required).
 
-Application Status
+######Application Status
 
 The status of an application can be the following:
 
